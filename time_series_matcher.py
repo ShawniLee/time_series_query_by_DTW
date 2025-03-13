@@ -170,10 +170,11 @@ def demo():
     # 初始化匹配器
     matcher = TimeSeriesMatcher(
         context, 
-        threshold=0.5,        # 降低DTW距离阈值
-        radius=1,             # DTW warping半径
-        position_group_ratio=0.1,  # 位置分组比例
-        lb_keogh_multiplier=1.5    # LB_Keogh剪枝倍数
+        threshold=0.5,
+        radius=1,
+        position_group_ratio=0.1,
+        lb_keogh_multiplier=1.2,    # 降低multiplier以提高剪枝效率
+        downsample_factor=2         # 使用2倍降采样
     )
 
     
