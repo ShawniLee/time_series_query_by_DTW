@@ -222,5 +222,261 @@ def demo():
     print("\n显示匹配结果...")
     matcher.visualize_matches(query, matches, save_path="images/demo_matches.png")
 
+def visualize_multi_query_matches(context: np.ndarray, queries: List[np.ndarray], 
+                               all_matches: List[List[Tuple[int, float]]], 
+                               labels: List[str] = None,
+                               save_path: str = "images/multi_query_matches.png"):
+    """
+    可视化多查询匹配结果
+    
+    Args:
+        context: 上下文序列
+        queries: 查询序列列表
+        all_matches: 每个查询序列对应的匹配结果列表
+        labels: 查询序列的标签列表
+        save_path: 图像保存路径
+    """
+    n_queries = len(queries)
+    if n_queries == 0:
+        print("没有查询序列")
+        return
+    
+    if labels is None:
+        labels = [f"查询 {i+1}" for i in range(n_queries)]
+    
+    # 创建images文件夹（如果不存在）
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    
+    # 准备彩色映射表，为每个查询分配不同颜色
+    cmap = plt.cm.get_cmap('tab10', n_queries)
+    colors = [cmap(i) for i in range(n_queries)]
+    
+    # 创建图表
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 10))
+    fig.suptitle('多查询匹配结果', fontsize=14, fontproperties=chinese_font)
+    
+    # 绘制所有查询序列
+    for i, query in enumerate(queries):
+        n_dims = query.shape[1]
+        for dim in range(n_dims):
+            ax1.plot(query[:, dim], color=colors[i], 
+                    label=f'{labels[i]} - 维度 {dim+1}', 
+                    linestyle=['-', '--', '-.', ':'][dim % 4])
+    
+    ax1.set_title('所有查询序列', fontproperties=chinese_font)
+    ax1.legend(prop=chinese_font)
+    ax1.grid(True)
+    
+    # 绘制上下文序列和匹配位置
+    display_length = min(10000, len(context))  # 显示更多的上下文序列
+    for dim in range(context.shape[1]):
+        ax2.plot(context[:display_length, dim], 'k-', 
+                alpha=0.5, label=f'上下文序列 - 维度 {dim+1}')
+    
+    # 为每个查询添加不同颜色的匹配区域
+    for i, matches in enumerate(all_matches):
+        if not matches:
+            continue
+            
+        query_length = len(queries[i])
+        # 只显示前20个匹配，避免图表太拥挤
+        for pos, dist in matches[:20]:
+            if pos < display_length:
+                ax2.axvspan(pos, pos + query_length, color=colors[i], 
+                           alpha=0.3, label=f'{labels[i]} 匹配' if pos == matches[0][0] else "")
+                # 添加位置和距离文本
+                ax2.text(pos, 0.95 - 0.05*i, f"{pos}\n{dist:.2f}", 
+                        fontsize=8, verticalalignment='top', 
+                        horizontalalignment='left', 
+                        color=colors[i], backgroundcolor='w',
+                        transform=ax2.get_xaxis_transform())
+    
+    ax2.set_title('上下文序列与匹配位置 (显示前10000个点)', fontproperties=chinese_font)
+    ax2.legend(prop=chinese_font, loc='upper right')
+    ax2.grid(True)
+    
+    # 添加结果摘要文本
+    summary_text = "匹配结果摘要:\n"
+    for i, matches in enumerate(all_matches):
+        summary_text += f"{labels[i]}: 找到 {len(matches)} 个匹配\n"
+    
+    plt.figtext(0.5, 0.01, summary_text, ha='center', 
+               fontproperties=chinese_font, fontsize=12,
+               bbox=dict(facecolor='white', alpha=0.8))
+    
+    plt.tight_layout()
+    plt.subplots_adjust(bottom=0.15)  # 为底部文本留出空间
+    # 保存图像到指定路径
+    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"多查询匹配结果图像已保存到: {save_path}")
+
+def multi_query_demo():
+    """多查询功能演示"""
+    # 生成示例数据
+    np.random.seed(42)
+    
+    # 创建多个查询序列
+    queries = []
+    labels = []
+    
+    # 查询1：衰减的正弦/余弦波（与原demo相同）
+    t1 = np.linspace(0, 4*np.pi, 100)
+    pattern1 = np.exp(-t1/10)  # 衰减因子
+    query1 = np.column_stack([
+        pattern1 * np.sin(t1),  # 衰减的正弦波
+        pattern1 * np.cos(t1)   # 衰减的余弦波
+    ])
+    queries.append(query1)
+    labels.append("衰减波")
+    
+    # 查询2：三角波
+    t2 = np.linspace(0, 4*np.pi, 120)
+    query2 = np.column_stack([
+        np.abs((t2 / np.pi) % 2 - 1),  # 三角波
+        np.sin(t2) * 0.5                # 较小振幅的正弦波
+    ])
+    queries.append(query2)
+    labels.append("三角波")
+    
+    # 查询3：方波
+    t3 = np.linspace(0, 4*np.pi, 80)
+    query3 = np.column_stack([
+        np.sign(np.sin(t3)),           # 方波
+        np.cos(2*t3) * 0.5             # 高频余弦波
+    ])
+    queries.append(query3)
+    labels.append("方波")
+    
+    # 创建上下文序列：在长序列中嵌入多个相似模式
+    t_long = np.linspace(0, 40*np.pi, 40000)
+    base_signal = np.column_stack([
+        np.sin(t_long),
+        np.cos(t_long)
+    ])
+    
+    # 添加随机噪声
+    noise = np.random.normal(0, 0.1, base_signal.shape)
+    context = base_signal + noise
+    
+    # 嵌入不同的模式
+    pattern_positions = {
+        "衰减波": [1000, 15000, 35000],
+        "三角波": [5000, 20000, 30000],
+        "方波": [10000, 25000, 38000]
+    }
+    
+    # 嵌入查询1（衰减波）
+    t1 = np.linspace(0, 4*np.pi, 100)
+    pattern1 = np.exp(-t1/10)
+    for pos in pattern_positions["衰减波"]:
+        if pos + len(query1) <= len(context):
+            variation = np.random.uniform(0.8, 1.2)
+            time_shift = np.random.randint(-5, 5)
+            pattern_segment = np.column_stack([
+                variation * pattern1 * np.sin(t1 + time_shift/10),
+                variation * pattern1 * np.cos(t1 + time_shift/10)
+            ])
+            context[pos:pos+len(query1)] = pattern_segment + noise[pos:pos+len(query1)] * 0.5
+    
+    # 嵌入查询2（三角波）
+    for pos in pattern_positions["三角波"]:
+        if pos + len(query2) <= len(context):
+            variation = np.random.uniform(0.9, 1.1)
+            pattern_segment = np.column_stack([
+                variation * np.abs((t2 / np.pi) % 2 - 1),
+                variation * np.sin(t2) * 0.5
+            ])
+            context[pos:pos+len(query2)] = pattern_segment + noise[pos:pos+len(query2)] * 0.5
+    
+    # 嵌入查询3（方波）
+    for pos in pattern_positions["方波"]:
+        if pos + len(query3) <= len(context):
+            variation = np.random.uniform(0.85, 1.15)
+            pattern_segment = np.column_stack([
+                variation * np.sign(np.sin(t3)),
+                variation * np.cos(2*t3) * 0.5
+            ])
+            context[pos:pos+len(query3)] = pattern_segment + noise[pos:pos+len(query3)] * 0.5
+    
+    # 可视化多查询示例数据
+    print("生成并显示多查询示例数据...")
+    
+    # 为每个查询类型创建可视化
+    for i, (query_name, positions) in enumerate(pattern_positions.items()):
+        query = queries[i]
+        save_path = f"images/multi_query_demo_{query_name}_data.png"
+        visualize_example_data(query, context, positions, save_path)
+    
+    # 初始化匹配器
+    matcher = TimeSeriesMatcher(
+        context, 
+        threshold=0.6,  # 稍微放宽阈值，以适应不同类型的模式
+        radius=2,      # 增加半径以提高灵活性
+        position_group_ratio=0.1,
+        lb_keogh_multiplier=1.2,
+        downsample_factor=2
+    )
+    
+    # 存储所有查询的匹配结果
+    all_matches = []
+    total_time_stats = {"total": 0}
+    
+    # 对每个查询序列执行匹配
+    print("\n开始执行多查询匹配...")
+    for i, query in enumerate(queries):
+        print(f"\n处理查询 {i+1}: {labels[i]}")
+        
+        # 查找匹配
+        matches, time_stats = matcher.find_matches(query)
+        all_matches.append(matches)
+        
+        # 累加总时间统计
+        for key, value in time_stats.items():
+            if key in total_time_stats:
+                total_time_stats[key] += value
+            else:
+                total_time_stats[key] = value
+        
+        # 显示每个查询的匹配结果
+        print(f"  找到 {len(matches)} 个匹配")
+        if len(matches) > 0:
+            print(f"  前3个最佳匹配：")
+            for pos, dist in matches[:3]:
+                print(f"  位置: {pos}, DTW距离: {dist:.4f}")
+        
+        # 可视化这个查询的匹配结果
+        matcher.visualize_matches(query, matches, 
+                                save_path=f"images/multi_query_demo_{labels[i]}_matches.png")
+    
+    # 显示总时间统计
+    print("\n总时间统计:")
+    for stage, time_spent in total_time_stats.items():
+        print(f"  {stage}: {time_spent:.4f}秒")
+    
+    # 可视化总时间统计
+    visualize_time_stats(total_time_stats, "images/multi_query_demo_time_stats.png")
+    
+    # 计算每个查询的匹配准确率
+    for i, query_name in enumerate(pattern_positions.keys()):
+        true_positions = pattern_positions[query_name]
+        matches = all_matches[i]
+        if not matches:
+            print(f"\n{query_name}: 未找到匹配")
+            continue
+            
+        found_positions = set(pos for pos, _ in matches)
+        actual_matches = sum(1 for pos in true_positions 
+                          if any(abs(pos - found_pos) < 100 for found_pos in found_positions))
+        print(f"\n{query_name}: 在{len(true_positions)}个实际模式中成功找到了{actual_matches}个")
+    
+    # 可视化所有查询的综合匹配结果
+    visualize_multi_query_matches(context, queries, all_matches, labels=labels, 
+                              save_path="images/multi_query_demo_all_matches.png")
+
 if __name__ == "__main__":
-    demo() 
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "multi":
+        multi_query_demo()
+    else:
+        demo() 

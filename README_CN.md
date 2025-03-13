@@ -17,6 +17,9 @@
 ### 性能分析可视化
 ![性能分析可视化](images/demo_time_stats.png)
 
+### 多查询匹配可视化
+![多查询匹配可视化](images/multi_query_demo_all_matches.png)
+
 ## 主要特性
 
 - **多维时间序列支持**：可同时处理多维数据，适用于传感器融合、动作识别等复杂应用场景
@@ -28,6 +31,10 @@
   - 支持非严格时间对齐的相似模式识别
   - 可处理存在振幅变化的相似模式
   - 能够识别存在噪声干扰的模式
+- **多查询支持**：
+  - 能够在同一上下文序列中同时搜索多种不同模式
+  - 提供多查询结果的彩色编码可视化
+  - 支持多查询操作的性能指标统计
 - **完整的可视化支持**：提供匹配结果和性能指标的直观可视化
 - **中文界面支持**：自动适配中文字体，支持在不同操作系统下显示中文
 
@@ -71,6 +78,60 @@ for pos, dist in matches[:5]:
 matcher.visualize_matches(query, matches, save_path="images/my_matches.png")
 ```
 
+### 多查询用法
+
+本项目支持同时搜索多种不同的模式：
+
+```python
+from time_series_matcher import multi_query_demo
+
+# 运行多查询演示
+multi_query_demo()
+```
+
+您也可以按以下方式实现自己的多查询搜索：
+
+```python
+import numpy as np
+from time_series_matcher import TimeSeriesMatcher, visualize_multi_query_matches
+
+# 创建上下文序列
+context = np.random.randn(10000, 2)
+
+# 创建多个查询序列
+query1 = np.random.randn(100, 2)  # 第一种模式
+query2 = np.random.randn(80, 2)   # 第二种模式
+query3 = np.random.randn(120, 2)  # 第三种模式
+
+queries = [query1, query2, query3]
+labels = ["模式A", "模式B", "模式C"]
+
+# 初始化匹配器，使用上下文序列
+matcher = TimeSeriesMatcher(
+    context, 
+    threshold=0.6,
+    radius=2,
+    position_group_ratio=0.1,
+    lb_keogh_multiplier=1.2,
+    downsample_factor=2
+)
+
+# 搜索所有模式
+all_matches = []
+for query in queries:
+    matches, _ = matcher.find_matches(query)
+    all_matches.append(matches)
+
+# 一起可视化所有匹配结果
+visualize_multi_query_matches(
+    context,
+    queries,
+    all_matches,
+    labels=labels,
+    save_path="images/my_multi_query_matches.png"
+)
+```
+
 ### 内置演示
 
 项目提供了完整的演示函数，生成包含特定模式的合成数据并展示匹配结果：
@@ -78,7 +139,7 @@ matcher.visualize_matches(query, matches, save_path="images/my_matches.png")
 ```python
 from time_series_matcher import demo
 
-# 运行演示
+# 运行单查询演示
 demo()
 ```
 
@@ -95,6 +156,9 @@ demo()
 
 ### 时间偏移的模式匹配
 ![时间偏移的模式匹配](images/test4_shifted_pattern.png)
+
+### 多查询模式匹配
+![多查询模式匹配](images/multi_query_demo_all_matches.png)
 
 ## 实现原理
 
@@ -123,6 +187,7 @@ demo()
 - **模式发现**：在长时间序列中寻找重复出现的模式
 - **手势识别**：匹配传感器数据中的特定手势模式
 - **生物信号分析**：在心电图、脑电图等生物信号中识别特定波形
+- **多模式搜索**：在同一数据流中同时搜索多种不同的模式
 
 ## 性能评估
 

@@ -17,6 +17,9 @@ This project utilizes Dynamic Time Warping (DTW) algorithm to implement flexible
 ### Performance Analysis Visualization
 ![Performance Analysis Visualization](images/demo_time_stats.png)
 
+### Multi-Query Matching Visualization
+![Multi-Query Matching Visualization](images/multi_query_demo_all_matches.png)
+
 ## Key Features
 
 - **Multidimensional Time Series Support**: Can process multidimensional data simultaneously, suitable for complex application scenarios such as sensor fusion and motion recognition
@@ -28,6 +31,10 @@ This project utilizes Dynamic Time Warping (DTW) algorithm to implement flexible
   - Support for similar pattern recognition with non-strict time alignment
   - Can process similar patterns with amplitude variations
   - Ability to identify patterns with noise interference
+- **Multi-Query Support**:
+  - Ability to search for multiple different patterns simultaneously in the same context sequence
+  - Comprehensive visualization of multiple query results with color coding
+  - Performance metrics for multi-query operations
 - **Comprehensive Visualization Support**: Provides intuitive visualization of matching results and performance metrics
 - **Multilingual Interface Support**: Automatic Chinese font adaptation, supporting Chinese display across different operating systems
 
@@ -71,6 +78,60 @@ for pos, dist in matches[:5]:
 matcher.visualize_matches(query, matches, save_path="images/my_matches.png")
 ```
 
+### Multi-Query Usage
+
+The project also supports searching for multiple different patterns simultaneously:
+
+```python
+from time_series_matcher import multi_query_demo
+
+# Run the multi-query demo
+multi_query_demo()
+```
+
+You can also implement your own multi-query search as follows:
+
+```python
+import numpy as np
+from time_series_matcher import TimeSeriesMatcher, visualize_multi_query_matches
+
+# Create context sequence
+context = np.random.randn(10000, 2)
+
+# Create multiple query sequences
+query1 = np.random.randn(100, 2)  # First pattern
+query2 = np.random.randn(80, 2)   # Second pattern
+query3 = np.random.randn(120, 2)  # Third pattern
+
+queries = [query1, query2, query3]
+labels = ["Pattern A", "Pattern B", "Pattern C"]
+
+# Initialize matcher with context sequence
+matcher = TimeSeriesMatcher(
+    context, 
+    threshold=0.6,
+    radius=2,
+    position_group_ratio=0.1,
+    lb_keogh_multiplier=1.2,
+    downsample_factor=2
+)
+
+# Search for all patterns
+all_matches = []
+for query in queries:
+    matches, _ = matcher.find_matches(query)
+    all_matches.append(matches)
+
+# Visualize all matches together
+visualize_multi_query_matches(
+    context,
+    queries,
+    all_matches,
+    labels=labels,
+    save_path="images/my_multi_query_matches.png"
+)
+```
+
 ### Built-in Demo
 
 The project provides a complete demo function that generates synthetic data with specific patterns and displays matching results:
@@ -78,7 +139,7 @@ The project provides a complete demo function that generates synthetic data with
 ```python
 from time_series_matcher import demo
 
-# Run the demo
+# Run the single query demo
 demo()
 ```
 
@@ -95,6 +156,9 @@ demo()
 
 ### Pattern Matching with Time Shifts
 ![Pattern with Time Shifts](images/test4_shifted_pattern.png)
+
+### Multi-Query Pattern Matching
+![Multi-Query Pattern Matching](images/multi_query_demo_all_matches.png)
 
 ## Implementation Principles
 
@@ -123,6 +187,7 @@ demo()
 - **Pattern Discovery**: Find repeatedly occurring patterns in long time series
 - **Gesture Recognition**: Match specific gesture patterns in sensor data
 - **Biological Signal Analysis**: Identify specific waveforms in biological signals such as ECG and EEG
+- **Multi-pattern Search**: Simultaneously search for multiple different patterns in the same data stream
 
 ## Performance Evaluation
 
