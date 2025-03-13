@@ -267,7 +267,7 @@ class TimeSeriesMatcher:
         return [min(group, key=lambda x: x[1]) for group in position_groups]
 
     def visualize_matches(self, query: np.ndarray, matches: List[Tuple[int, float]], 
-                         max_matches: int = 5):
+                         max_matches: int = 5, save_path: str = "images/matches.png"):
         """
         可视化查询序列和匹配结果
         
@@ -275,6 +275,7 @@ class TimeSeriesMatcher:
             query: 查询序列
             matches: 匹配结果列表
             max_matches: 最多显示的匹配数量
+            save_path: 图像保存路径
         """
         n_dims = query.shape[1]
         n_matches = min(len(matches), max_matches)
@@ -282,6 +283,9 @@ class TimeSeriesMatcher:
         if n_matches == 0:
             print("没有找到匹配结果")
             return
+        
+        # 创建images文件夹（如果不存在）
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
         
         # 创建图形布局
         fig = plt.figure(figsize=(15, 3 * (n_matches + 1)))
@@ -308,4 +312,7 @@ class TimeSeriesMatcher:
                 ax.grid(True)
         
         plt.tight_layout()
-        plt.show() 
+        # 保存图像到指定路径
+        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.close()
+        print(f"匹配结果图像已保存到: {save_path}") 

@@ -1,6 +1,7 @@
 import numpy as np
 from time_series_matcher import TimeSeriesMatcher
 import matplotlib.pyplot as plt
+import os
 
 def test_simple_pattern():
     """测试简单的正弦波模式匹配"""
@@ -23,14 +24,17 @@ def test_simple_pattern():
     expected_positions = [0, 50, 100]
     
     # 使用较小的阈值进行匹配
-    matcher = TimeSeriesMatcher(context, threshold=.3)
-    matches = matcher.find_matches(query, radius=2)
+    matcher = TimeSeriesMatcher(context, threshold=.3, radius=2)
+    matches, time_stats = matcher.find_matches(query)
     
     print(f"期望找到的位置: {expected_positions}")
     print(f"实际找到的位置: {[pos for pos, _ in matches]}")
     
+    # 创建images文件夹（如果不存在）
+    os.makedirs("images", exist_ok=True)
+    
     # 可视化结果
-    matcher.visualize_matches(query, matches)
+    matcher.visualize_matches(query, matches, save_path="images/test1_simple_pattern.png")
 
 def test_noisy_pattern():
     """测试带噪声的模式匹配"""
@@ -53,14 +57,14 @@ def test_noisy_pattern():
     expected_positions = [0, 50, 100]
     
     # 使用较大的阈值来处理噪声
-    matcher = TimeSeriesMatcher(context, threshold=.5)
-    matches = matcher.find_matches(query, radius=2)
+    matcher = TimeSeriesMatcher(context, threshold=.5, radius=2)
+    matches, time_stats = matcher.find_matches(query)
     
     print(f"期望找到的位置: {expected_positions}")
     print(f"实际找到的位置: {[pos for pos, _ in matches]}")
     
     # 可视化结果
-    matcher.visualize_matches(query, matches)
+    matcher.visualize_matches(query, matches, save_path="images/test2_noisy_pattern.png")
 
 def test_scaled_pattern():
     """测试不同尺度的模式匹配"""
@@ -77,7 +81,7 @@ def test_scaled_pattern():
     context = np.zeros((150, 2))
     
     # 添加三个不同尺度的模式
-    scales = [1.0, 0.5, 2.0]
+    scales = [1.0, 0.8, 1.2]
     positions = [0, 50, 100]
     
     for pos, scale in zip(positions, scales):
@@ -85,14 +89,14 @@ def test_scaled_pattern():
         context[pos:pos+50, 1] = scale * np.cos(t_query)
     
     # 使用较大的阈值来处理尺度变化
-    matcher = TimeSeriesMatcher(context, threshold=.5)
-    matches = matcher.find_matches(query, radius=5)
+    matcher = TimeSeriesMatcher(context, threshold=1, radius=3)
+    matches, time_stats = matcher.find_matches(query)
     
     print(f"期望找到的位置: {positions}")
     print(f"实际找到的位置: {[pos for pos, _ in matches]}")
     
     # 可视化结果
-    matcher.visualize_matches(query, matches)
+    matcher.visualize_matches(query, matches, save_path="images/test3_scaled_pattern.png")
 
 def test_shifted_pattern():
     """测试时间偏移的模式匹配"""
@@ -117,14 +121,14 @@ def test_shifted_pattern():
         context[pos:pos+50, 1] = np.cos(t_query + shift)
     
     # 使用较大的radius来处理时间偏移
-    matcher = TimeSeriesMatcher(context, threshold=.5)
-    matches = matcher.find_matches(query, radius=5)
+    matcher = TimeSeriesMatcher(context, threshold=.5, radius=5)
+    matches, time_stats = matcher.find_matches(query)
     
     print(f"期望找到的位置: {positions}")
     print(f"实际找到的位置: {[pos for pos, _ in matches]}")
     
     # 可视化结果
-    matcher.visualize_matches(query, matches)
+    matcher.visualize_matches(query, matches, save_path="images/test4_shifted_pattern.png")
 
 if __name__ == "__main__":
     # 设置随机种子以确保结果可重现

@@ -15,7 +15,8 @@ from time_series_matcher_class import TimeSeriesMatcher, configure_chinese_font,
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
-def visualize_example_data(query: np.ndarray, context: np.ndarray, pattern_positions: List[int]):
+def visualize_example_data(query: np.ndarray, context: np.ndarray, pattern_positions: List[int], 
+                       save_path: str = "images/example_data.png"):
     """
     可视化示例数据，包括查询序列和带有标记匹配位置的上下文序列
     
@@ -23,8 +24,12 @@ def visualize_example_data(query: np.ndarray, context: np.ndarray, pattern_posit
         query: 查询序列
         context: 上下文序列
         pattern_positions: 模式的实际位置列表
+        save_path: 图像保存路径
     """
     n_dims = query.shape[1]
+    
+    # 创建images文件夹（如果不存在）
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
     
     # 创建两行图表：上面是查询序列，下面是完整上下文序列和模式位置
     fig = plt.figure(figsize=(15, 10))
@@ -70,15 +75,22 @@ def visualize_example_data(query: np.ndarray, context: np.ndarray, pattern_posit
         ax.grid(True)
     
     plt.tight_layout()
-    plt.show()
+    # 保存图像到指定路径
+    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"示例数据图像已保存到: {save_path}")
 
-def visualize_time_stats(time_stats: Dict[str, float]):
+def visualize_time_stats(time_stats: Dict[str, float], save_path: str = "images/time_stats.png"):
     """
     可视化时间统计数据
     
     Args:
         time_stats: 包含各阶段耗时的字典
+        save_path: 图像保存路径
     """
+    # 创建images文件夹（如果不存在）
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    
     # 提取各阶段时间和总时间
     total_time = time_stats["total"]
     stage_times = {k: v for k, v in time_stats.items() if k != "total"}
@@ -123,7 +135,10 @@ def visualize_time_stats(time_stats: Dict[str, float]):
                fontproperties=chinese_font, fontsize=12)
     
     plt.tight_layout()
-    plt.show()
+    # 保存图像到指定路径
+    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"时间统计图像已保存到: {save_path}")
 
 def demo():
     """演示使用示例"""
@@ -165,7 +180,7 @@ def demo():
     
     # 可视化示例数据
     print("显示示例数据...")
-    visualize_example_data(query, context, pattern_positions)
+    visualize_example_data(query, context, pattern_positions, "images/demo_example_data.png")
     
     # 初始化匹配器
     matcher = TimeSeriesMatcher(
@@ -189,7 +204,7 @@ def demo():
         print(f"  {stage}: {time_spent:.4f}秒")
     
     # 可视化时间统计
-    visualize_time_stats(time_stats)
+    visualize_time_stats(time_stats, "images/demo_time_stats.png")
     
     print(f"\n找到 {len(matches)} 个匹配")
     if len(matches) > 0:
@@ -205,7 +220,7 @@ def demo():
     
     # 可视化匹配结果
     print("\n显示匹配结果...")
-    matcher.visualize_matches(query, matches)
+    matcher.visualize_matches(query, matches, save_path="images/demo_matches.png")
 
 if __name__ == "__main__":
     demo() 
